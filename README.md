@@ -24,6 +24,12 @@ You can use the shortcode `[products]` to display Holli products
 
 `lang` Sets the language. Default value is EN.
 
+## Support
+
+For bugs and problems please create a Github issue. 
+
+
+
 
 
 
