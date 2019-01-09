@@ -358,7 +358,7 @@ class Holli
             $offset++;
             $output .= '<div class="card">';
             $output .= '<div class="card-inner">';
-            $output .=  '<a class="card-image" href="' . HOLLI_LINK  . $product['productId'] . '">';
+            $output .=  '<a class="card-image" href="' . HOLLI_LINK  . $product['productId'] . '&partnerId=' . $product['partnerId'] . '">';
             $output .=  '<img src="' . $product['media'][0]['imageUrl'] . '" alt="' . $product['name'] . '"/>';
             $output .= '<div class="card-price">';
             if ($product['prices'][0]['originalPrice'] > $product['prices'][0]['currentPrice']) {
@@ -368,7 +368,7 @@ class Holli
             $output .=  '<div class="card-content">';
             $output .=  '<a class="card-title" href="' . HOLLI_LINK. $product['productId'] . '"><h4>' . $product['name'] . '</h4></a>';
             $output .=  '<p>' . ucfirst($product['type']) . ', ' . $product['category'] . '</p>';
-            $output .=  '<a href="' . HOLLI_LINK  . $product['productId'] . '" class="button">' . $value['button'] . '</a>';
+            $output .=  '<a href="' . HOLLI_LINK  . $product['productId'] . '&partnerId=' . $product['partnerId'] . '" class="button">' . $value['button'] . '</a>';
             $output .=  '</div></div></div>'; 
         }
         $output .=  '</div>';
