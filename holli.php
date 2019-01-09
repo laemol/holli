@@ -73,11 +73,8 @@ class Holli
      */
     public function __construct()
     {
-        add_action('product-list', [$this, 'addProductListCode']);
-        add_action('product', [$this, 'addProductCode']);
-
-        add_shortcode('product-list', [$this, 'addProductListCode']);
-        add_shortcode('product', [$this, 'addProductCode']);
+        add_action('products', [$this, 'addProductListCode']);
+        add_shortcode('products', [$this, 'addProductListCode']);
 
         // Admin page calls
         add_action('admin_menu', [$this, 'addAdminMenu']);
@@ -273,6 +270,7 @@ class Holli
 
                             <span><?php echo $api_response['error']['message'] ?></span>
                         </p>
+                   
                     <?php endif; ?>
 
                 <?php endif; ?>
@@ -287,7 +285,38 @@ class Holli
 
                 </div>
             </form>
-		</div>
+        </div>
+        
+        <?php
+         // if we have a good response from the API
+         if (!isset($api_response['error']) && !empty($api_response)) : ?>
+         <div class="wrap">
+         <form id="holli-admin-option" class="postbox">
+                <div class="form-group inside">
+                <h3><?php _e('Shortcode', 'holli'); ?></h3>
+                The shortcode <code>[products]</code> displays the Holli products
+
+                <h3>Options</h3>
+                <p><code>limit</code> Sets the number of products that will be displayed. Default value is <code>4</code></p>
+                <p><code>recommended</code> Shows only recommended products in random order if set to 1. Default is <code>0</code></p>
+                <p><code>button</code> Sets the text on the button. Default value is <code>Buy Now</code></p>
+                <p><code>lang</code> Sets the language. Default value is <code>EN</code></p>
+                <p><code>area</code> Display products in a certain area. Default all areas are available. Possible values: </p>
+
+                <ul>
+                <?php
+                $zones = array_shift($this->getData('zones'));
+                foreach($zones as $zone){
+                    echo '<li>' . $zone['name'] . '<code>area=' . $zone['id'] . '</code></li>';
+                }
+                ?>
+                </ul>
+
+            </div>
+            </form>
+        </div>
+
+        <?php endif; ?>
 
 		<?php
     }
@@ -310,11 +339,12 @@ class Holli
         $value = shortcode_atts([
             'limit' => 4,
             'button' => 'Buy Now',
-            'recommended' => '',
+            'recommended' => 0,
             'lang' => 'en',
+            'area' => ''
         ], $atts);
 
-        $data = $this->getData('products?&limit=' . $value['limit'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang']);
+        $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang']);
 
         if (!$data) {
             echo '<i>No data found</i>';
