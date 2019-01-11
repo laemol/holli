@@ -26,7 +26,13 @@ You can use the shortcode `[products]` to display Holli products
 
 ## Support
 
-For bugs and problems please create a Github issue. 
+For bugs and problems please create a Github issue.
+
+## Changelog
+
+1.1.0 - Added support for iframed content
+1.0.0 - Initial version
+
 
 
 
