@@ -8,14 +8,14 @@
  * Text Domain:       talpaq
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * GitHub Plugin URI: https://github.com/talpaq
+ * GitHub Plugin URI: https://github.com/laemol/holli
  */
 
 /** Allow for cross-domain requests (from the front end). */
 send_origin_headers();
 
 /*
-* Plugin constants
+* Holli constants
 */
 if (!defined('HOLLI_PLUGIN_VERSION')) {
     define('HOLLI_PLUGIN_VERSION', '1.1.0');
@@ -30,14 +30,14 @@ if (!defined('HOLLI_DOMAIN')) {
     define('HOLLI_DOMAIN', 'https://backend.holliapp.com');
 }
 if (!defined('HOLLI_LINK')) {
-    define('HOLLI_LINK', 'https://www.tickets-tour.com/tour/details/?pid=');
+    define('HOLLI_LINK', 'https://www.tickets-tours.com/tour/details/?pid=');
 }
 if (!defined('HOLLI_VERSION')) {
     define('HOLLI_VERSION', 'v3');
 }
 
 /*
- * Plugin stylesheet
+ * Holli stylesheet
  */
 
 function load_plugin_css() {
@@ -73,7 +73,7 @@ class Holli
      */
     public function __construct()
     {
-        add_action('products', [$this, 'addProductListCode']);
+        // Register Shortcode
         add_shortcode('products', [$this, 'addProductListCode']);
 
         // Admin page calls
@@ -341,24 +341,25 @@ class Holli
             'button' => 'Buy Now',
             'recommended' => 0,
             'lang' => 'en',
-            'area' => ''
+            'area' => '', 
+            'partner_id' => null // Only used for iframe solution 
         ], $atts);
 
         $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang']);
 
-        if (!$data) {
-            echo '<i>No data found</i>';
-        }elseif(!$options['api_key']){
+        if (!$options['api_key']) { 
             echo '<i>Please set your API key in the plugin settings</i>';
-        }else{
-
+        }elseif(!$data){
+            echo '<i>No data found</i>';
+        }elseif($data['data']){
             $output = '<div class="card-container">';
-
         foreach ($data['data'] as $product) {
             $offset++;
+            $partnerId = !is_null($value['partner_id']) ? $value['partner_id'] : $product['partnerId'];
+
             $output .= '<div class="card">';
             $output .= '<div class="card-inner">';
-            $output .=  '<a class="card-image" href="' . HOLLI_LINK  . $product['productId'] . '&partnerId=' . $product['partnerId'] . '">';
+            $output .=  '<a class="card-image" href="' . HOLLI_LINK  . $partnerId . '&partnerId=' . $product['partnerId'] . '">';
             $output .=  '<img src="' . $product['media'][0]['imageUrl'] . '" alt="' . $product['name'] . '"/>';
             $output .= '<div class="card-price">';
             if ($product['prices'][0]['originalPrice'] > $product['prices'][0]['currentPrice']) {
@@ -368,10 +369,12 @@ class Holli
             $output .=  '<div class="card-content">';
             $output .=  '<a class="card-title" href="' . HOLLI_LINK. $product['productId'] . '"><h4>' . $product['name'] . '</h4></a>';
             $output .=  '<p>' . ucfirst($product['type']) . ', ' . $product['category'] . '</p>';
-            $output .=  '<a href="' . HOLLI_LINK  . $product['productId'] . '&partnerId=' . $product['partnerId'] . '" class="button">' . $value['button'] . '</a>';
+            $output .=  '<a href="' . HOLLI_LINK  . $product['productId'] . '&partnerId=' . $partnerId  . '" class="button">' . $value['button'] . '</a>';
             $output .=  '</div></div></div>'; 
         }
         $output .=  '</div>';
+        }else{
+            echo '<i>Error</i>';
         }
         return $output;
 
