@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Holli
  * Description:       Plugin for the Holli API
- * Version:           1.1.0
+ * Version:           1.2.0
  * Author:            Talpaq
  * Author URI:        https://talpaq.com
  * Text Domain:       talpaq
@@ -18,7 +18,7 @@ send_origin_headers();
 * Holli constants
 */
 if (!defined('HOLLI_PLUGIN_VERSION')) {
-    define('HOLLI_PLUGIN_VERSION', '1.1.0');
+    define('HOLLI_PLUGIN_VERSION', '1.2.0');
 }
 if (!defined('HOLLI_URL')) {
     define('HOLLI_URL', plugin_dir_url(__FILE__));
@@ -40,13 +40,14 @@ if (!defined('HOLLI_VERSION')) {
  * Holli stylesheet
  */
 
-function load_plugin_css() {
-    wp_enqueue_style( 'holli-style', HOLLI_URL . 'assets/css/holli.css' );
+function load_plugin_css()
+{
+    wp_enqueue_style('holli-style', HOLLI_URL . 'assets/css/holli.css');
 }
-add_action( 'wp_enqueue_scripts', 'load_plugin_css' );
+add_action('wp_enqueue_scripts', 'load_plugin_css');
 
 /**
- * Main Holli Class 
+ * Main Holli Class
  *
  * This class creates the option page and add the web app scripts
  */
@@ -81,7 +82,7 @@ class Holli
         add_action('wp_ajax_store_admin_data', [$this, 'storeAdminData']);
         add_action('admin_enqueue_scripts', [$this, 'addAdminScripts']);
         add_action('wp_enqueue_style', [$this, 'addStyleScripts']);
-        add_action( 'admin_print_styles', [$this, 'utm_user_scripts'] );
+        add_action('admin_print_styles', [$this, 'utm_user_scripts']);
     }
 
     /**
@@ -147,10 +148,11 @@ class Holli
     /**
     * Plugin Stylesheets
     */
-    function utm_user_scripts() {
-        $plugin_url = plugin_dir_url( __FILE__ );
+    public function utm_user_scripts()
+    {
+        $plugin_url = plugin_dir_url(__FILE__);
 
-    wp_enqueue_style( 'style',  HOLLI_URL. "assets/css/holli.css");
+        wp_enqueue_style('style', HOLLI_URL . 'assets/css/holli.css');
     }
 
     /**
@@ -169,7 +171,7 @@ class Holli
     }
 
     /**
-     * Make an API call to the Holli API and returns the response
+     * Make an API call to the Holli API and returns the (cached) response
      *
      * @return array
      */
@@ -179,16 +181,26 @@ class Holli
 
         $data = [];
 
-        $wp_request_headers = [ 
+        $wp_request_headers = [
             'x-authorization:' . $options['api_key'],
             'x-authorization' => $options['api_key'],
             'Content-Type' => 'application/json'];
 
         $url = HOLLI_DOMAIN . '/api/' . HOLLI_VERSION . '/' . $resource ;
 
-        $response = wp_remote_get($url, [
-            'headers' => $wp_request_headers
-        ]);
+        $key = 'holli_api_result';
+        $cached = get_transient($key);
+
+        if (false !== $cached) {
+            $response = $cached;
+        } else {
+            $response = wp_remote_get($url, [
+                'headers' => $wp_request_headers
+            ]);
+
+            // Cache the response
+            set_transient($key, $response, 24 * HOUR_IN_SECONDS);
+        }
 
         if (is_array($response) && !is_wp_error($response)) {
             $data = json_decode($response['body'], true);
@@ -220,8 +232,7 @@ class Holli
 
         $api_response = $this->getData('customers');
 
-        $not_ready = (empty($data['api_key']) || empty($api_response) || isset($api_response['error']));
-         ?>
+        $not_ready = (empty($data['api_key']) || empty($api_response) || isset($api_response['error'])); ?>
 
 		<div class="wrap">
 
@@ -253,7 +264,7 @@ class Holli
                     <?php echo $this->getStatusIcon(!$not_ready); ?>
                 </div>
 
-	            <?php if (!empty($data['api_key']) ): ?>
+	            <?php if (!empty($data['api_key'])): ?>
 
                     <?php
                     // if we don't even have a response from the API
@@ -306,10 +317,9 @@ class Holli
                 <ul>
                 <?php
                 $zones = array_shift($this->getData('zones'));
-                foreach($zones as $zone){
-                    echo '<li>' . $zone['name'] . '<code>area=' . $zone['id'] . '</code></li>';
-                }
-                ?>
+        foreach ($zones as $zone) {
+            echo '<li>' . $zone['name'] . '<code>area=' . $zone['id'] . '</code></li>';
+        } ?>
                 </ul>
 
             </div>
@@ -341,44 +351,44 @@ class Holli
             'button' => 'Buy Now',
             'recommended' => 0,
             'lang' => 'en',
-            'area' => '', 
-            'partner_id' => null // Only used for iframe solution 
+            'area' => '',
+            'partner_id' => null // Only used for iframe solution
         ], $atts);
 
         $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang']);
 
-        if (!$options['api_key']) { 
+        if (!$options['api_key']) {
             echo '<i>Please set your API key in the plugin settings</i>';
-        }elseif(!$data){
+        } elseif (!$data) {
             echo '<i>No data found</i>';
-        }elseif($data['data']){
+        } elseif ($data['data']) {
             $output = '<div class="card-container">';
-        foreach ($data['data'] as $product) {
-            $offset++;
-            $partnerId = !is_null($value['partner_id']) ? $value['partner_id'] : $product['partnerId'];
+            foreach ($data['data'] as $product) {
+                $offset++;
+                $partnerId = !is_null($value['partner_id']) ? $value['partner_id'] : $product['partnerId'];
 
-            $output .= '<div class="card">';
-            $output .= '<div class="card-inner">';
-            $output .=  '<a class="card-image" href="' . HOLLI_LINK  . $partnerId . '&partnerId=' . $product['partnerId'] . '">';
-            $output .=  '<img src="' . $product['media'][0]['imageUrl'] . '" alt="' . $product['name'] . '"/>';
-            $output .= '<div class="card-price">';
-            if ($product['prices'][0]['originalPrice'] > $product['prices'][0]['currentPrice']) {
-                $output .=  '<span class="discount">&euro; ' . $product['prices'][0]['originalPrice'] . '</span>';
+                $output .= '<div class="card">';
+                $output .= '<div class="card-inner">';
+                $output .= '<a class="card-image" href="' . HOLLI_LINK . $partnerId . '&partnerId=' . $product['partnerId'] . '">';
+                $output .= '<img src="' . $product['media'][0]['imageUrl'] . '" alt="' . $product['name'] . '"/>';
+                $output .= '<div class="card-price">';
+                if ($product['prices'][0]['originalPrice'] > $product['prices'][0]['currentPrice']) {
+                    $output .= '<span class="discount">&euro; ' . $product['prices'][0]['originalPrice'] . '</span>';
+                }
+                $output .= '&euro; ' . $product['prices'][0]['currentPrice'] . '</div></a>';
+                $output .= '<div class="card-content">';
+                $output .= '<a class="card-title" href="' . HOLLI_LINK . $product['productId'] . '"><h4>' . $product['name'] . '</h4></a>';
+                $output .= '<p>' . ucfirst($product['type']) . ', ' . $product['category'] . '</p>';
+                $output .= '<a href="' . HOLLI_LINK . $product['productId'] . '&partnerId=' . $partnerId . '" class="button">' . $value['button'] . '</a>';
+                $output .= '</div></div></div>';
             }
-            $output .=  '&euro; ' . $product['prices'][0]['currentPrice'] . '</div></a>';
-            $output .=  '<div class="card-content">';
-            $output .=  '<a class="card-title" href="' . HOLLI_LINK. $product['productId'] . '"><h4>' . $product['name'] . '</h4></a>';
-            $output .=  '<p>' . ucfirst($product['type']) . ', ' . $product['category'] . '</p>';
-            $output .=  '<a href="' . HOLLI_LINK  . $product['productId'] . '&partnerId=' . $partnerId  . '" class="button">' . $value['button'] . '</a>';
-            $output .=  '</div></div></div>'; 
-        }
-        $output .=  '</div>';
-        }else{
+            $output .= '</div>';
+        } else {
             echo '<i>Error</i>';
         }
         return $output;
 
-        ob_get_clean(); 
+        ob_get_clean();
     }
 
     /**

@@ -30,7 +30,8 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
-1.1.0 - Added support for iframed content
+1.2.0 - Added caching
+1.1.0 - Added support for iframed content  
 1.0.0 - Initial version
 
 
