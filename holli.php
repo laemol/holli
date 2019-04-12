@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Holli
  * Description:       Plugin for the Holli API
- * Version:           1.2.0
+ * Version:           1.3.0
  * Author:            Talpaq
  * Author URI:        https://talpaq.com
  * Text Domain:       talpaq
@@ -18,7 +18,7 @@ send_origin_headers();
 * Holli constants
 */
 if (!defined('HOLLI_PLUGIN_VERSION')) {
-    define('HOLLI_PLUGIN_VERSION', '1.2.0');
+    define('HOLLI_PLUGIN_VERSION', '1.3.0');
 }
 if (!defined('HOLLI_URL')) {
     define('HOLLI_URL', plugin_dir_url(__FILE__));
@@ -30,10 +30,13 @@ if (!defined('HOLLI_DOMAIN')) {
     define('HOLLI_DOMAIN', 'https://backend.holliapp.com');
 }
 if (!defined('HOLLI_LINK')) {
-    define('HOLLI_LINK', 'https://www.tickets-tours.com/tour/details/?pid=');
+    define('HOLLI_LINK', 'https://www.holli-daytickets.com');
+}
+if (!defined('HOLLI_PAGE')) {
+    define('HOLLI_PAGE', 'ticket');
 }
 if (!defined('HOLLI_VERSION')) {
-    define('HOLLI_VERSION', 'v3');
+    define('HOLLI_VERSION', 'v4');
 }
 
 /*
@@ -175,7 +178,7 @@ class Holli
      *
      * @return array
      */
-    private function getData($resource)
+    private function getData($resource, $key)
     {
         $options = $this->getOptions();
 
@@ -188,7 +191,6 @@ class Holli
 
         $url = HOLLI_DOMAIN . '/api/' . HOLLI_VERSION . '/' . $resource ;
 
-        $key = 'holli_api_result';
         $cached = get_transient($key);
 
         if (false !== $cached) {
@@ -230,7 +232,10 @@ class Holli
     {
         $data = $this->getOptions();
 
-        $api_response = $this->getData('customers');
+        // Delete cache to prevent invalid results
+        delete_transient('holli_whoami');
+
+        $api_response = $this->getData('whoami', 'holli_whoami');
 
         $not_ready = (empty($data['api_key']) || empty($api_response) || isset($api_response['error'])); ?>
 
@@ -247,11 +252,12 @@ class Holli
                      * API Settings
                      * --------------------------
                      */
+
                     ?>
 
                     <p>
 	                <?php if ($not_ready): ?> 
-                            <?php _e('You can find your api key on your <a href="https://backend.holliapp.com/profile#api" target="_blank">profile page</a>.', 'holli'); ?>
+                            <?php _e('You can find your api key on your <a href="https://www.holli-daytickets.com/profile#api" target="_blank">profile page</a>.', 'holli'); ?>
                     <?php endif; ?>
                     </p><br>
 
@@ -260,8 +266,10 @@ class Holli
                                            id="holli_api_key"
                                            class="regular-text"
                                            type="text"
-                                           value="<?php echo (isset($data['api_key'])) ? $data['api_key'] : ''; ?>"/>
+                                           value="<?php echo (isset($data['api_key']) ? $data['api_key'] : null); ?>"/>
+
                     <?php echo $this->getStatusIcon(!$not_ready); ?>
+
                 </div>
 
 	            <?php if (!empty($data['api_key'])): ?>
@@ -282,7 +290,11 @@ class Holli
                             <span><?php echo $api_response['error']['message'] ?></span>
                         </p>
                    
-                    <?php endif; ?>
+                    <?php 
+                
+                    delete_option($this->option_name);
+
+                    endif; ?>
 
                 <?php endif; ?>
 
@@ -316,7 +328,12 @@ class Holli
 
                 <ul>
                 <?php
-                $zones = array_shift($this->getData('zones'));
+
+                // Save GUID
+                update_option($this->option_name, [ 'api_guid' => $api_response['guid'], 'api_key' => $data['api_key']]);
+
+                $zones = array_shift($this->getData('zones', 'holli_zones'));
+
         foreach ($zones as $zone) {
             echo '<li>' . $zone['name'] . '<code>area=' . $zone['id'] . '</code></li>';
         } ?>
@@ -355,7 +372,7 @@ class Holli
             'partner_id' => null // Only used for iframe solution
         ], $atts);
 
-        $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang']);
+        $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang'], 'holli_api_tickets');
 
         if (!$options['api_key']) {
             echo '<i>Please set your API key in the plugin settings</i>';
@@ -364,12 +381,10 @@ class Holli
         } elseif ($data['data']) {
             $output = '<div class="card-container">';
             foreach ($data['data'] as $product) {
-                $offset++;
-                $partnerId = !is_null($value['partner_id']) ? $value['partner_id'] : $product['partnerId'];
-
+                $link = HOLLI_LINK . '/' . $value['lang'] . '/' . HOLLI_PAGE . '/' . $product['slug'] . '?partnerId=' . $options['api_guid'];
                 $output .= '<div class="card">';
                 $output .= '<div class="card-inner">';
-                $output .= '<a class="card-image" href="' . HOLLI_LINK . $partnerId . '&partnerId=' . $product['partnerId'] . '">';
+                $output .= '<a class="card-image" href="' . $link . '">';
                 $output .= '<img src="' . $product['media'][0]['imageUrl'] . '" alt="' . $product['name'] . '"/>';
                 $output .= '<div class="card-price">';
                 if ($product['prices'][0]['originalPrice'] > $product['prices'][0]['currentPrice']) {
@@ -377,35 +392,21 @@ class Holli
                 }
                 $output .= '&euro; ' . $product['prices'][0]['currentPrice'] . '</div></a>';
                 $output .= '<div class="card-content">';
-                $output .= '<a class="card-title" href="' . HOLLI_LINK . $product['productId'] . '"><h4>' . $product['name'] . '</h4></a>';
+                $output .= '<a class="card-title" href="' . $link . '"><h4>' . $product['name'] . '</h4></a>';
                 $output .= '<p>' . ucfirst($product['type']) . ', ' . $product['category'] . '</p>';
-                $output .= '<a href="' . HOLLI_LINK . $product['productId'] . '&partnerId=' . $partnerId . '" class="button">' . $value['button'] . '</a>';
+                $output .= '<a href="' . $link . '" class="button">' . $value['button'] . '</a>';
                 $output .= '</div></div></div>';
             }
             $output .= '</div>';
         } else {
-            echo '<i>Error</i>';
+            echo '<i>Oops, something is wrong</i>';
+            var_dump($data);
         }
         return $output;
 
         ob_get_clean();
     }
 
-    /**
-     * Add the Product details code to the page
-     *
-     * This contains the code for the Product details
-     *
-     * @param $force boolean
-     *
-     * @return void
-     */
-    public function addProductCode()
-    {
-        $data = $this->getData('products/' . $_GET['pid']);
-
-        return($product);
-    }
 }
 
 /*
