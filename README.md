@@ -4,13 +4,15 @@ This is a very simple plugin to get products from the Holli API
 
 ## Setup 
 
- * Place the holli folder in in `wp-content/plugins/`
+ * Place the holli folder in in `wp-content/plugins/` opr upload in Wordpress plugin section
  * Activate the plugin in WordPress > Plugins > Holli > Activate
- * Go to Settings > Holli and set up your API key
+ * Go to Settings > Holli and set up your API key (from your backend profile)
 
 ## Usage
 
-You can use the shortcode `[products]` to display Holli products
+You can use the shortcode `[products]` to display Holli products  
+
+For example: `[products area=86 limit=8 button=“More” color="#3CCD5B"]`
 
 ## Options
 
@@ -30,14 +32,8 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
+1.3.1 - Fixed price. Add responsive grid and add background color option  
 1.3.0 - Changed domain and API version, fixed cache issues   
 1.2.0 - Added caching  
 1.1.0 - Added support for iframed content  
 1.0.0 - Initial version
-
-
-
-
-
-
-

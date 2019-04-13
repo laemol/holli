@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Holli
  * Description:       Plugin for the Holli API
- * Version:           1.3.0
+ * Version:           1.3.1
  * Author:            Talpaq
  * Author URI:        https://talpaq.com
  * Text Domain:       talpaq
@@ -18,7 +18,7 @@ send_origin_headers();
 * Holli constants
 */
 if (!defined('HOLLI_PLUGIN_VERSION')) {
-    define('HOLLI_PLUGIN_VERSION', '1.3.0');
+    define('HOLLI_PLUGIN_VERSION', '1.3.1');
 }
 if (!defined('HOLLI_URL')) {
     define('HOLLI_URL', plugin_dir_url(__FILE__));
@@ -322,6 +322,7 @@ class Holli
                 <h3>Options</h3>
                 <p><code>limit</code> Sets the number of products that will be displayed. Default value is <code>4</code></p>
                 <p><code>recommended</code> Shows only recommended products in random order if set to 1. Default is <code>0</code></p>
+                <p><code>color</code> Sets the background color on the price tag and button. Default value from stylesheet</p>
                 <p><code>button</code> Sets the text on the button. Default value is <code>Buy Now</code></p>
                 <p><code>lang</code> Sets the language. Default value is <code>EN</code></p>
                 <p><code>area</code> Display products in a certain area. Default all areas are available. Possible values: </p>
@@ -365,6 +366,7 @@ class Holli
 
         $value = shortcode_atts([
             'limit' => 4,
+            'color' => '',
             'button' => 'Buy Now',
             'recommended' => 0,
             'lang' => 'en',
@@ -384,20 +386,20 @@ class Holli
                 $link = HOLLI_LINK . '/' . $value['lang'] . '/' . HOLLI_PAGE . '/' . $product['slug'] . '?partnerId=' . $options['api_guid'];
                 $output .= '<div class="card">';
                 $output .= '<div class="card-inner">';
-                $output .= '<a class="card-image" href="' . $link . '">';
+                $output .= '<a class="card-image" href="' . $link . '" target="_blank">';
                 $output .= '<img src="' . $product['media'][0]['imageUrl'] . '" alt="' . $product['name'] . '"/>';
-                $output .= '<div class="card-price">';
-                if ($product['prices'][0]['originalPrice'] > $product['prices'][0]['currentPrice']) {
-                    $output .= '<span class="discount">&euro; ' . $product['prices'][0]['originalPrice'] . '</span>';
+                $output .= '<div class="card-price" style="background-color:' . $value['color'] . '">';
+                if ($product['originalPrice'] > $product['currentPrice']) {
+                    $output .= '<span class="discount">&euro; ' . $product['originalPrice'] . '</span>';
                 }
-                $output .= '&euro; ' . $product['prices'][0]['currentPrice'] . '</div></a>';
+                $output .= '&euro; ' . $product['currentPrice'] . '</div></a>';
                 $output .= '<div class="card-content">';
-                $output .= '<a class="card-title" href="' . $link . '"><h4>' . $product['name'] . '</h4></a>';
+                $output .= '<a class="card-title" href="' . $link . '" target="_blank"><h4>' . $product['name'] . '</h4></a>';
                 $output .= '<p>' . ucfirst($product['type']) . ', ' . $product['category'] . '</p>';
-                $output .= '<a href="' . $link . '" class="button">' . $value['button'] . '</a>';
+                $output .= '<a href="' . $link . '" class="button" target="_blank" style="background-color:' . $value['color'] . '">' . $value['button'] . '</a>';
                 $output .= '</div></div></div>';
             }
-            $output .= '</div>';
+            $output .= '</ul>';
         } else {
             echo '<i>Oops, something is wrong</i>';
             var_dump($data);
