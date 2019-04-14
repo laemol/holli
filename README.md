@@ -32,6 +32,7 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
+1.3.2 - Added cache busting to stylesheet  
 1.3.1 - Fixed price. Add responsive grid and add background color option  
 1.3.0 - Changed domain and API version, fixed cache issues   
 1.2.0 - Added caching  
