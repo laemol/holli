@@ -23,6 +23,7 @@ For example: `[products id=1]` and `[products id=2]`
 Results from the API are cached for a day. To clear the cache deactivate and activate the plugin or give the shorcode a (new) unique id.
 
 ## Options
+`id` Gives the shortcode a unique id. Default value is 41
 
 `limit` Sets the number of products that will be displayed. Default value is 4.
 
