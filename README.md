@@ -1,6 +1,6 @@
 # Holli API WordPress plugin 
 
-This is a very simple plugin to get products from the Holli API
+This is a plugin to get products from the Holli API http://holli-daytickets.com
 
 ## Setup 
 
