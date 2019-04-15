@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Holli
  * Description:       Plugin for the Holli API
- * Version:           1.3.1
+ * Version:           1.3.3
  * Author:            Talpaq
  * Author URI:        https://talpaq.com
  * Text Domain:       talpaq
@@ -18,7 +18,7 @@ send_origin_headers();
 * Holli constants
 */
 if (!defined('HOLLI_PLUGIN_VERSION')) {
-    define('HOLLI_PLUGIN_VERSION', '1.3.1');
+    define('HOLLI_PLUGIN_VERSION', '1.3.3');
 }
 if (!defined('HOLLI_URL')) {
     define('HOLLI_URL', plugin_dir_url(__FILE__));
@@ -45,7 +45,7 @@ if (!defined('HOLLI_VERSION')) {
 
 function load_plugin_css()
 {
-    wp_enqueue_style('holli-style', HOLLI_URL . 'assets/css/holli.css');
+    wp_enqueue_style('holli-style', HOLLI_URL . 'assets/css/holli.css', [], HOLLI_PLUGIN_VERSION);
 }
 add_action('wp_enqueue_scripts', 'load_plugin_css');
 
@@ -86,8 +86,20 @@ class Holli
         add_action('admin_enqueue_scripts', [$this, 'addAdminScripts']);
         add_action('wp_enqueue_style', [$this, 'addStyleScripts']);
         add_action('admin_print_styles', [$this, 'utm_user_scripts']);
+        register_activation_hook( __FILE__, [$this, 'plugin_activate'] );
     }
 
+    /**
+     * Runs on plugin activation
+     *
+     * @return array
+     */
+    function plugin_activate() {
+
+         // Delete cache to prevent invalid results
+         delete_transient('holli_api_results');
+    }
+    
     /**
      * Returns the saved options data as an array
      *
@@ -320,6 +332,7 @@ class Holli
                 The shortcode <code>[products]</code> displays the Holli products
 
                 <h3>Options</h3>
+                <p><code>id</code> Give a (unique) id for the shortcode if you want to use multiple times. Default value is <code>1</code></p>
                 <p><code>limit</code> Sets the number of products that will be displayed. Default value is <code>4</code></p>
                 <p><code>recommended</code> Shows only recommended products in random order if set to 1. Default is <code>0</code></p>
                 <p><code>color</code> Sets the background color on the price tag and button. Default value from stylesheet</p>
@@ -365,16 +378,17 @@ class Holli
         $options = $this->getOptions();
 
         $value = shortcode_atts([
+            'id' => '1',
             'limit' => 4,
             'color' => '',
             'button' => 'Buy Now',
             'recommended' => 0,
             'lang' => 'en',
             'area' => '',
-            'partner_id' => null // Only used for iframe solution
+            'partner_id' => null // Only used for iframe option
         ], $atts);
 
-        $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang'], 'holli_api_tickets');
+        $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang'], 'holli_api_results_' . $value['id']);
 
         if (!$options['api_key']) {
             echo '<i>Please set your API key in the plugin settings</i>';

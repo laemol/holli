@@ -14,6 +14,14 @@ You can use the shortcode `[products]` to display Holli products
 
 For example: `[products area=86 limit=8 button=“More” color="#3CCD5B"]`
 
+If you would like to use the shortcode multiple times, you need to give it a unique id. If you do not do this all shortcoded will return the same result.  
+
+For example: `[products id=1]` and `[products id=2]`
+
+## Cache
+
+Results from the API are cached for a day. To clear the cache deactivate and activate the plugin or give the shorcode a (new) unique id.
+
 ## Options
 
 `limit` Sets the number of products that will be displayed. Default value is 4.
@@ -32,6 +40,8 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
+1.3.3 - Add id attribute so shortcode can be used multiple times. Clear cache on plugin reactivate.  
+1.3.2 - Add cache busting for the stylesheet
 1.3.1 - Fixed price. Add responsive grid and add background color option  
 1.3.0 - Changed domain and API version, fixed cache issues   
 1.2.0 - Added caching  
