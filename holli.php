@@ -385,7 +385,7 @@ public function addProductListCode($atts = '')
         'partner_id' => null // Only used for iframe solution
     ], $atts);
 
-    $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang'], 'holli_api_tickets' . $value['id']);
+    $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang'], 'holli_api_tickets' . $value['id'] . $value['limit'] . $value['area']  . $value['recommended'] . $value['lang']);
 
     if (!$options['api_key']) {
         echo '<i>Please set your API key in the plugin settings</i>';
