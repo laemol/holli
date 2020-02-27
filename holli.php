@@ -398,7 +398,7 @@ public function addProductListCode($atts = '')
             $output .= '<div class="card">';
             $output .= '<div class="card-inner">';
             $output .= '<a class="card-image" href="' . $link . '" target="_blank">';
-            $output .= '<img src="' . $product['media'][0]['imageUrl'] . '" alt="' . $product['name'] . '"/>';
+            $output .= '<img src="' . $product['media'][0]['imageUrl'] . '" style="height:140px" alt="' . $product['name'] . '"/>';
             $output .= '<div class="card-price" style="background-color:' . $value['color'] . '">';
             if ($product['originalPrice'] > $product['currentPrice']) {
                 $output .= '<span class="discount">&euro; ' . $product['originalPrice'] . '</span>';
