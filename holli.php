@@ -335,8 +335,17 @@ class Holli
                 <p><code>color</code> Sets the background color on the price tag and button. Default value from stylesheet</p>
                 <p><code>button</code> Sets the text on the button. Default value is <code>Buy Now</code></p>
                 <p><code>lang</code> Sets the language. Default value is <code>EN</code></p>
-                <p><code>area</code> Display products in a certain area. Default all areas are available. Possible values: </p>
+                <p><code>cat</code> Display products from a specific category. Default all categories are available. Possible values: </p>
+                <ul>
+                <?php
+                        $cats = array_shift($this->getData('product/categories', 'holli_categories'));
 
+                        foreach ($cats as $cat) {
+                            echo '<li style="padding-left:30px;">' . $cat['name'] . '<code>cat=' . $cat['id'] . '</code></li>';
+                        } ?>
+                </ul>
+                <p><code>area</code> Display products in a certain area. Default all areas are available. Possible values: </p>
+                
                 <ul>
                 <?php
 
@@ -346,10 +355,10 @@ class Holli
                         $zones = array_shift($this->getData('zones', 'holli_zones'));
 
                         foreach ($zones as $zone) {
-                            echo '<li>' . $zone['name'] . '<code>area=' . $zone['id'] . '</code></li>';
+                            echo '<li style="padding-left:30px;">' . $zone['name'] . '<code>area=' . $zone['id'] . '</code></li>';
                         } ?>
-                    </ul>
-
+                </ul>
+                
                 </div>
             </form>
         </div>
@@ -382,10 +391,11 @@ public function addProductListCode($atts = '')
         'recommended' => 0,
         'lang' => 'en',
         'area' => '',
-        'partner_id' => null // Only used for iframe solution
+        'partner_id' => null, // Only used for iframe solution
+        'cat' => '',
     ], $atts);
 
-    $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang'], 'holli_api_tickets' . $value['id'] . $value['limit'] . $value['area']  . $value['recommended'] . $value['lang']);
+    $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang'] . '&category_id=' . $value['cat'], 'holli_api_tickets' . $value['id'] . $value['limit'] . $value['area']  . $value['recommended'] . $value['lang'] . $value['cat']);
 
     if (!$options['api_key']) {
         echo '<i>Please set your API key in the plugin settings</i>';
