@@ -30,7 +30,7 @@ if (!defined('HOLLI_DOMAIN')) {
     define('HOLLI_DOMAIN', 'https://backend.holliapp.com');
 }
 if (!defined('HOLLI_LINK')) {
-    define('HOLLI_LINK', 'https://www.holli-daytickets.com');
+    define('HOLLI_LINK', 'https://tickets-tours.com');
 }
 if (!defined('HOLLI_PAGE')) {
     define('HOLLI_PAGE', 'ticket');
