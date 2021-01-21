@@ -41,7 +41,7 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
-1.4.0 - Changed domain name to tickets-tours.com 
+1.4.0 - Changed domain name to tickets-tours.com  
 1.3.6 - Add cat attribute to filter by category  
 1.3.5 - Set image height  
 1.3.4 - Clear cache when changing shortcode parameters  
