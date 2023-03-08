@@ -33,7 +33,7 @@ if (!defined('HOLLI_LINK')) {
     define('HOLLI_LINK', 'https://tickets-tours.com');
 }
 if (!defined('HOLLI_PAGE')) {
-    define('HOLLI_PAGE', 'ticket');
+    define('HOLLI_PAGE', 'activity');
 }
 if (!defined('HOLLI_VERSION')) {
     define('HOLLI_VERSION', 'v4');
@@ -404,7 +404,7 @@ public function addProductListCode($atts = '')
     } elseif ($data['data']) {
         $output = '<div class="card-container">';
         foreach ($data['data'] as $product) {
-            $link = HOLLI_LINK . '/' . $value['lang'] . '/' . HOLLI_PAGE . '/' . $product['slug'] . '?partnerId=' . $options['api_guid'];
+            $link = HOLLI_LINK . '/' . $value['lang'] . '/' . HOLLI_PAGE . '/' . $product['slug'] . '-' . $product['id']  . '?partnerId=' . $options['api_guid'];
             $output .= '<div class="card">';
             $output .= '<div class="card-inner">';
             $output .= '<a class="card-image" href="' . $link . '" target="_blank">';
