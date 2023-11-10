@@ -11,163 +11,154 @@
  * GitHub Plugin URI: https://github.com/laemol/holli
  */
 
- defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
-if( ! class_exists( 'updateChecker' ) ) {
+if (!class_exists('updateChecker')) {
 
-	class updateChecker{
+    class updateChecker
+    {
 
-		public $plugin_slug;
-		public $version;
-		public $cache_key;
-		public $cache_allowed;
+        public string $plugin_slug;
+        public string $version;
+        public string $cache_key;
+        public bool $cache_allowed;
 
-		public function __construct() {
+        public function __construct()
+        {
+            $this->plugin_slug = plugin_basename(__DIR__);
+            $this->version = '1.0';
+            $this->cache_key = 'holli_custom_upd';
+            $this->cache_allowed = false;
 
-			$this->plugin_slug = plugin_basename( __DIR__ );
-			$this->version = '1.0';
-			$this->cache_key = 'holli_custom_upd';
-			$this->cache_allowed = false;
+            add_filter('plugins_api', array($this, 'info'), 20, 3);
+            add_filter('site_transient_update_plugins', array($this, 'update'));
+            add_action('upgrader_process_complete', array($this, 'purge'), 10, 2);
+        }
 
-			add_filter( 'plugins_api', array( $this, 'info' ), 20, 3 );
-			add_filter( 'site_transient_update_plugins', array( $this, 'update' ) );
-			add_action( 'upgrader_process_complete', array( $this, 'purge' ), 10, 2 );
+        public function request()
+        {
 
-		}
+            $remote = get_transient($this->cache_key);
 
-		public function request(){
+            if (false === $remote || !$this->cache_allowed) {
 
-			$remote = get_transient( $this->cache_key );
+                $remote = wp_remote_get(
+                    'https://talpaq.com/holli-wp/info.json',
+                    array(
+                        'timeout' => 10,
+                        'headers' => array(
+                            'Accept' => 'application/json'
+                        )
+                    )
+                );
 
-			if( false === $remote || ! $this->cache_allowed ) {
+                if (
+                    is_wp_error($remote)
+                    || 200 !== wp_remote_retrieve_response_code($remote)
+                    || empty(wp_remote_retrieve_body($remote))
+                ) {
+                    return false;
+                }
 
-				$remote = wp_remote_get(
-					'https://talpaq.com/holli-wp/info.json',
-					array(
-						'timeout' => 10,
-						'headers' => array(
-							'Accept' => 'application/json'
-						)
-					)
-				);
+                set_transient($this->cache_key, $remote, DAY_IN_SECONDS);
+            }
 
-				if(
-					is_wp_error( $remote )
-					|| 200 !== wp_remote_retrieve_response_code( $remote )
-					|| empty( wp_remote_retrieve_body( $remote ) )
-				) {
-					return false;
-				}
+            return json_decode(wp_remote_retrieve_body($remote));
+        }
 
-				set_transient( $this->cache_key, $remote, DAY_IN_SECONDS );
+        function info($res, $action, $args)
+        {
+            // do nothing if you're not getting plugin information right now
+            if ('plugin_information' !== $action) {
+                return $res;
+            }
 
-			}
+            // do nothing if it is not our plugin
+            if ($this->plugin_slug !== $args->slug) {
+                return $res;
+            }
 
-			$remote = json_decode( wp_remote_retrieve_body( $remote ) );
+            // get updates
+            $remote = $this->request();
 
-			return $remote;
+            if (!$remote) {
+                return $res;
+            }
 
-		}
+            $res = new stdClass();
 
-		function info( $res, $action, $args ) {
+            $res->name = $remote->name;
+            $res->slug = $remote->slug;
+            $res->version = $remote->version;
+            $res->tested = $remote->tested;
+            $res->requires = $remote->requires;
+            $res->author = $remote->author;
+            $res->author_profile = $remote->author_profile;
+            $res->download_link = $remote->download_url;
+            $res->trunk = $remote->download_url;
+            $res->requires_php = $remote->requires_php;
+            $res->last_updated = $remote->last_updated;
 
-			// print_r( $action );
-			// print_r( $args );
+            $res->sections = array(
+                'description' => $remote->sections->description,
+                'installation' => $remote->sections->installation,
+                'changelog' => $remote->sections->changelog
+            );
 
-			// do nothing if you're not getting plugin information right now
-			if( 'plugin_information' !== $action ) {
-				return $res;
-			}
+            if (!empty($remote->banners)) {
+                $res->banners = array(
+                    'low' => $remote->banners->low,
+                    'high' => $remote->banners->high
+                );
+            }
 
-			// do nothing if it is not our plugin
-			if( $this->plugin_slug !== $args->slug ) {
-				return $res;
-			}
+            return $res;
 
-			// get updates
-			$remote = $this->request();
+        }
 
-			if( ! $remote ) {
-				return $res;
-			}
+        public function update($transient)
+        {
+            if (empty($transient->checked)) {
+                return $transient;
+            }
 
-			$res = new stdClass();
+            $remote = $this->request();
 
-			$res->name = $remote->name;
-			$res->slug = $remote->slug;
-			$res->version = $remote->version;
-			$res->tested = $remote->tested;
-			$res->requires = $remote->requires;
-			$res->author = $remote->author;
-			$res->author_profile = $remote->author_profile;
-			$res->download_link = $remote->download_url;
-			$res->trunk = $remote->download_url;
-			$res->requires_php = $remote->requires_php;
-			$res->last_updated = $remote->last_updated;
+            if (
+                $remote
+                && version_compare($this->version, $remote->version, '<')
+                && version_compare($remote->requires, get_bloginfo('version'), '<=')
+                && version_compare($remote->requires_php, PHP_VERSION, '<')
+            ) {
+                $res = new stdClass();
+                $res->slug = $this->plugin_slug;
+                $res->plugin = plugin_basename(__FILE__);
+                $res->new_version = $remote->version;
+                $res->tested = $remote->tested;
+                $res->package = $remote->download_url;
 
-			$res->sections = array(
-				'description' => $remote->sections->description,
-				'installation' => $remote->sections->installation,
-				'changelog' => $remote->sections->changelog
-			);
+                $transient->response[$res->plugin] = $res;
 
-			if( ! empty( $remote->banners ) ) {
-				$res->banners = array(
-					'low' => $remote->banners->low,
-					'high' => $remote->banners->high
-				);
-			}
+            }
 
-			return $res;
+            return $transient;
+        }
 
-		}
+        public function purge($upgrader, $options): void
+        {
+            if (
+                $this->cache_allowed
+                && isset($upgrader)
+                && 'update' === $options['action']
+                && 'plugin' === $options['type']
+            ) {
+                // just clean the cache when new plugin version is installed
+                delete_transient($this->cache_key);
+            }
+        }
+    }
 
-		public function update( $transient ) {
-
-			if ( empty($transient->checked ) ) {
-				return $transient;
-			}
-
-			$remote = $this->request();
-
-			if(
-				$remote
-				&& version_compare( $this->version, $remote->version, '<' )
-				&& version_compare( $remote->requires, get_bloginfo( 'version' ), '<=' )
-				&& version_compare( $remote->requires_php, PHP_VERSION, '<' )
-			) {
-				$res = new stdClass();
-				$res->slug = $this->plugin_slug;
-				$res->plugin = plugin_basename( __FILE__ );
-				$res->new_version = $remote->version;
-				$res->tested = $remote->tested;
-				$res->package = $remote->download_url;
-
-				$transient->response[ $res->plugin ] = $res;
-
-	    }
-
-			return $transient;
-
-		}
-
-		public function purge( $upgrader, $options ){
-
-			if (
-				$this->cache_allowed
-				&& 'update' === $options['action']
-				&& 'plugin' === $options[ 'type' ]
-			) {
-				// just clean the cache when new plugin version is installed
-				delete_transient( $this->cache_key );
-			}
-
-		}
-
-	}
-
-	new updateChecker();
-
+    new updateChecker();
 }
 
 /** Allow for cross-domain requests (from the front end). */
@@ -202,10 +193,11 @@ if (!defined('HOLLI_VERSION')) {
  * Holli stylesheet
  */
 
-function load_plugin_css()
+function load_plugin_css(): void
 {
     wp_enqueue_style('holli-style', HOLLI_URL . 'assets/css/holli.css', [], HOLLI_PLUGIN_VERSION);
 }
+
 add_action('wp_enqueue_scripts', 'load_plugin_css');
 
 /**
@@ -220,14 +212,14 @@ class Holli
      *
      * @var string
      */
-    private $_nonce = 'holli-admin';
+    private string $_nonce = 'holli-admin';
 
     /**
      * The option name
      *
      * @var string
      */
-    private $option_name = 'holli_data';
+    private string $option_name = 'holli_data';
 
     /**
      * Holli constructor.
@@ -245,28 +237,20 @@ class Holli
         add_action('admin_enqueue_scripts', [$this, 'addAdminScripts']);
         add_action('wp_enqueue_style', [$this, 'addStyleScripts']);
         add_action('admin_print_styles', [$this, 'utm_user_scripts']);
-        register_activation_hook( __FILE__, [$this, 'plugin_activate'] );
+        register_activation_hook(__FILE__, [$this, 'plugin_activate']);
     }
 
     /**
      * Runs on plugin activation
      *
-     * @return array
+     * @return array|null
      */
-    function plugin_activate() {
-
-         // Delete cache to prevent invalid results
-         delete_transient('holli_api_results');
-    }
-    
-    /**
-     * Returns the saved options data as an array
-     *
-     * @return array
-     */
-    private function getOptions()
+    function plugin_activate(): ?array
     {
-        return get_option($this->option_name, []);
+        // Delete cache to prevent invalid results
+        delete_transient('holli_api_results');
+
+        return null;
     }
 
     /**
@@ -285,7 +269,7 @@ class Holli
         $data = $this->getOptions();
 
         foreach ($_POST as $field => $value) {
-            if (substr($field, 0, 6) !== 'holli_') {
+            if (!str_starts_with($field, 'holli_')) {
                 continue;
             }
 
@@ -295,19 +279,30 @@ class Holli
 
             $field = substr($field, 6);
 
-            $data[$field] = esc_attr__($value);
+            $data[$field] = $value;
         }
 
         update_option($this->option_name, $data);
 
         echo __('Saved!', 'holli');
-        die();
+
+        return null;
+    }
+
+    /**
+     * Returns the saved options data as an array
+     *
+     * @return array
+     */
+    private function getOptions(): array
+    {
+        return get_option($this->option_name, []);
     }
 
     /**
      * Admin Scripts for the Ajax call
      */
-    public function addAdminScripts()
+    public function addAdminScripts(): void
     {
         wp_enqueue_script('holli-admin', HOLLI_URL . 'assets/js/admin.js', [], 1.0);
 
@@ -322,17 +317,15 @@ class Holli
     /**
      * Plugin Stylesheets
      */
-    public function utm_user_scripts()
+    public function utm_user_scripts(): void
     {
-        $plugin_url = plugin_dir_url(__FILE__);
-
         wp_enqueue_style('style', HOLLI_URL . 'assets/css/holli.css');
     }
 
     /**
      * Adds the Holli label to the WordPress Admin Sidebar Menu
      */
-    public function addAdminMenu()
+    public function addAdminMenu(): void
     {
         add_menu_page(
             __('Holli API', 'holli'),
@@ -345,62 +338,11 @@ class Holli
     }
 
     /**
-     * Make an API call to the Holli API and returns the (cached) response
-     *
-     * @return array
-     */
-    private function getData($resource, $key)
-    {
-        $options = $this->getOptions();
-
-        $data = [];
-
-        $wp_request_headers = [
-            'x-authorization:' . $options['api_key'],
-            'x-authorization' => $options['api_key'],
-            'Content-Type' => 'application/json'
-        ];
-
-        $url = HOLLI_DOMAIN . '/api/' . HOLLI_VERSION . '/' . $resource;
-
-        $cached = get_transient($key);
-
-        if (false !== $cached) {
-            $response = $cached;
-        } else {
-            $response = wp_remote_get($url, [
-                'headers' => $wp_request_headers
-            ]);
-
-            // Cache the response
-            set_transient($key, $response, 24 * HOUR_IN_SECONDS);
-        }
-
-        if (is_array($response) && !is_wp_error($response)) {
-            $data = json_decode($response['body'], true);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Get a Dashicon for a given status
-     *
-     * @param $valid boolean
-     *
-     * @return string
-     */
-    private function getStatusIcon($valid)
-    {
-        return ($valid) ? '<span class="dashicons dashicons-yes success-message" style="color:green;font-size:24px"></span>' : '<span class="dashicons dashicons-no-alt error-message" style="font-size:24px"></span>';
-    }
-
-    /**
      * Outputs the Admin Dashboard layout containing the form with all its options
      *
      * @return void
      */
-    public function adminLayout()
+    public function adminLayout(): void
     {
         $data = $this->getOptions();
 
@@ -410,184 +352,346 @@ class Holli
         $api_response = $this->getData('whoami', 'holli_whoami');
 
         $not_ready = (empty($data['api_key']) || empty($api_response) || isset($api_response['error'])); ?>
+        <form id="holli-admin-form">
+        <div class="wrap">
 
-    <div class="wrap">
+            <h1><?php _e('Holli API Settings', 'holli'); ?></h1>
 
-        <h1><?php _e('Holli API Settings', 'holli'); ?></h1>
+            <div class="postbox">
 
-        <form id="holli-admin-form" class="postbox">
+                <div class="form-group inside">
+                    <?php
+                    /*
+                         * --------------------------
+                         * API Settings
+                         * --------------------------
+                         */
 
-            <div class="form-group inside">
-                <?php
-                /*
-                     * --------------------------
-                     * API Settings
-                     * --------------------------
-                     */
+                    ?>
 
-                ?>
+                    <p>
+                        <?php if ($not_ready) : ?>
+                            <?php _e('You can find your api key on your <a href="https://www.holli-daytickets.com/profile#api" target="_blank">profile page</a>.', 'holli'); ?>
+                        <?php endif; ?>
+                    </p><br>
 
-                <p>
-                    <?php if ($not_ready) : ?>
-                        <?php _e('You can find your api key on your <a href="https://www.holli-daytickets.com/profile#api" target="_blank">profile page</a>.', 'holli'); ?>
-                    <?php endif; ?>
-                </p><br>
+                    <label for="holli_api_key" style="padding-right:20px"><?php _e('API key', 'holli'); ?>:</label>
+                    <input name="holli_api_key" id="holli_api_key" class="regular-text" type="text"
+                           value="<?php echo($data['api_key'] ?? null); ?>"/>
 
-                <label style="padding-right:20px"><?php _e('API key', 'holli'); ?>:</label>
-                <input name="holli_api_key" id="holli_api_key" class="regular-text" type="text" value="<?php echo (isset($data['api_key']) ? $data['api_key'] : null); ?>" />
+                    <?php echo $this->getStatusIcon(!$not_ready); ?>
 
-                <?php echo $this->getStatusIcon(!$not_ready); ?>
+                </div>
 
-            </div>
-
-            <?php if (!empty($data['api_key'])) : ?>
-
-                <?php
-                // if we don't even have a response from the API
-                if (empty($api_response)) : ?>
-                    <p class="notice notice-error">
-                        <?php _e('An error happened on the WordPress side. Make sure your server allows remote calls.', 'holli'); ?>
-                    </p>
-
-                <?php
-            // If we have an error returned by the API
-            elseif (isset($api_response['error'])) : ?>
-
-                    <p class="notice notice-error">
-
-                        <span><?php echo $api_response['error']['message'] ?></span>
-                    </p>
+                <?php if (!empty($data['api_key'])) : ?>
 
                     <?php
+                    // if we don't even have a response from the API
+                    if (empty($api_response)) : ?>
+                        <p class="notice notice-error">
+                            <?php _e('An error happened on the WordPress side. Make sure your server allows remote calls.', 'holli'); ?>
+                        </p>
 
-                    delete_option($this->option_name);
+                    <?php
+                    // If we have an error returned by the API
+                    elseif (isset($api_response['error'])) : ?>
 
-                endif; ?>
+                        <p class="notice notice-error">
 
-            <?php endif; ?>
+                            <span><?php echo $api_response['error']['message'] ?></span>
+                        </p>
 
-            <hr>
+                        <?php
 
-            <div class="inside">
+                        delete_option($this->option_name);
 
-                <button class="button button-primary" id="holli-admin-save" type="submit">
-                    <?php _e('Save', 'holli'); ?>
-                </button>
+                    endif; ?>
 
-            </div>
-        </form>
-    </div>
+                <?php endif; ?>
 
-    <?php
-    // if we have a good response from the API
-    if (!isset($api_response['error']) && !empty($api_response)) : ?>
-        <div class="wrap">
-            <form id="holli-admin-option" class="postbox">
-                <div class="form-group inside">
-                <h3><?php _e('Shortcode', 'holli'); ?></h3>
-                The shortcode <code>[products]</code> displays the Holli products
+                <hr>
 
-                <h3>Options</h3>
-                <p><code>id</code> Give a (unique) id for the shortcode if you want to use multiple times. Default value is <code>1</code></p>
-                <p><code>limit</code> Sets the number of products that will be displayed. Default value is <code>4</code></p>
-                <p><code>recommended</code> Shows only recommended products in random order if set to 1. Default is <code>0</code></p>
-                <p><code>color</code> Sets the background color on the price tag and button. Default value from stylesheet</p>
-                <p><code>button</code> Sets the text on the button. Default value is <code>Buy Now</code></p>
-                <p><code>lang</code> Sets the language. Default value is <code>EN</code></p>
-                <p><code>cat</code> Display products from a specific category. Default all categories are available. Possible values: </p>
-                <ul>
-                <?php
-                        $cats = array_shift($this->getData('product/categories', 'holli_categories'));
+                <div class="inside">
 
-                        foreach ($cats as $cat) {
-                            echo '<li style="padding-left:30px;">' . $cat['name'] . '<code>cat=' . $cat['id'] . '</code></li>';
-                        } ?>
-                </ul>
-                <p><code>area</code> Display products in a certain area. Default all areas are available. Possible values: </p>
-                
-                <ul>
-                <?php
+                    <button class="button button-primary" id="holli-admin-save" type="submit">
+                        <?php _e('Save', 'holli'); ?>
+                    </button>
 
-                        // Save GUID
-                        update_option($this->option_name, ['api_guid' => $api_response['guid'], 'api_key' => $data['api_key']]);
-
-                        $zones = array_shift($this->getData('zones', 'holli_zones'));
-
-                        foreach ($zones as $zone) {
-                            echo '<li style="padding-left:30px;">' . $zone['name'] . '<code>area=' . $zone['id'] . '</code></li>';
-                        } ?>
-                </ul>
-                
                 </div>
-            </form>
         </div>
+        </div>
+        <?php
+        // if we have a good response from the API
+        if (!$not_ready) : ?>
+            <div class="wrap">
+                <div class="postbox">
+                    <div class="form-group inside">
+                        <h3><?php _e('Shortcode', 'holli'); ?></h3>
+                        <?php
+                        $text = 'The shortcode <code>[products';
+                        foreach($data as $key => $value){
+                            if (str_starts_with($key, 'shortcode') && (is_array($value) ? !empty(implode(',', $value)) : !empty($value))) {
+                                $text .= ' ' . substr($key, 10) . '="' . (is_array($value) ? implode(',', $value) : $value) . '"';
+                            }
+                        }
+                        $text .= ']</code> displays the Holli products';
+                        echo $text;
+                        ?>
 
-    <?php endif; ?>
+                        <h3>Options</h3>
+                        <p><code>id</code> Give a (unique) id for the shortcode if you want to use it more than once
+                            Default value is <code>1</code></p>
+                        <input name="holli_shortcode_id" id="holli_shortcode_id" class="regular-text" type="text" placeholder="1"
+                               value="<?php echo($data['shortcode_id'] ?? null); ?>"/>
+                        <p><code>limit</code> Sets the number of products that will be displayed. Default value is
+                            <code>4</code></p>
+                        <input name="holli_shortcode_limit" id="holli_shortcode_limit" class="regular-text" type="text" placeholder="4"
+                               value="<?php echo($data['shortcode_limit'] ?? null); ?>"/>
+                        <p><code>recommended</code> Shows only recommended products in random order if set to 1. Default
+                            is <code>0</code></p>
+                        <input name="holli_shortcode_recommended" id="holli_shortcode_recommended" class="regular-text" type="text" placeholder="0"
+                               value="<?php echo($data['shortcode_recommended'] ?? null); ?>"/>
+                        <p><code>color</code> Sets the background color on the price tag and button. Default value from
+                            stylesheet</p>
+                        <input name="holli_shortcode_color" id="holli_shortcode_color" class="regular-text" type="text" placeholder="#cccccc"
+                               value="<?php echo($data['shortcode_color'] ?? null); ?>"/>
+                        <p><code>button</code> Sets the text on the button. Default value is <code>Buy Now</code></p>
+                        <input name="holli_shortcode_button" id="holli_shortcode_button" class="regular-text" type="text" placeholder="Buy Now"
+                               value="<?php echo($data['shortcode_button'] ?? null); ?>"/>
+                        <p><code>lang</code> Sets the language. Default value is <code>EN</code></p>
+                        <input name="holli_shortcode_lang" id="holli_shortcode_lang" class="regular-text" type="text" placeholder="EN"
+                               value="<?php echo($data['shortcode_lang'] ?? null); ?>"/>
+                        <p><code>cat</code> Display products from a specific category. Default all categories are
+                            available.</p>
 
-<?php
-}
+                        <?php
+                        $data = $this->getData('product/categories', 'holli_categories');
+                        $cats = array_shift($data);
 
-/**
- * Add the web app code to the page
- *
- * This contains the shortcode markup used by the web app and the widget API call on the frontend
- *
- * @param $force boolean
- *
- * @return void
- */
-public function addProductListCode($atts = '')
-{
-    ob_start();
+                        echo $this->getOptionsList('cat', $cats);
+                        ?>
 
-    $options = $this->getOptions();
+                        <p><code>area</code> Display products in a certain area. Default all areas are available.</p>
 
-    $value = shortcode_atts([
-        'id' => '',
-        'limit' => 4,
-        'color' => '',
-        'button' => 'Buy Now',
-        'recommended' => 0,
-        'lang' => 'en',
-        'area' => '',
-        'partner_id' => null, // Only used for iframe solution
-        'cat' => '',
-    ], $atts);
+                        <?php
+                        $data = $this->getData('zones', 'holli_zones');
+                        $zones = array_shift($data);
 
-    $data = $this->getData('products?&limit=' . $value['limit'] . '&zone_id=' . $value['area'] . '&recommended=' . $value['recommended'] . '&lang=' . $value['lang'] . '&category_id=' . $value['cat'], 'holli_api_tickets' . $value['id'] . $value['limit'] . $value['area']  . $value['recommended'] . $value['lang'] . $value['cat']);
+                        echo $this->getOptionsList('area', $zones);
+                        ?>
 
-    if (!$options['api_key']) {
-        echo '<i>Please set your API key in the plugin settings</i>';
-    } elseif (!$data) {
-        echo '<i>No data found</i>';
-    } elseif ($data['data']) {
-        $output = '<div class="card-container">';
-        foreach ($data['data'] as $product) {
-            $link = HOLLI_LINK . ($value['lang'] === "en" ? '/' : '/' . $value['lang'] . '/') . HOLLI_PAGE . '/' . $product['slug'] . '-' . $product['id']  . '?partnerId=' . $options['api_guid'];
-            $output .= '<div class="card">';
-            $output .= '<div class="card-inner">';
-            $output .= '<a class="card-image" href="' . $link . '" target="_blank">';
-            $output .= '<img src="' . $product['media'][0]['imageUrl'] . '" style="height:140px" alt="' . $product['name'] . '"/>';
-            $output .= '<div class="card-price" style="background-color:' . $value['color'] . '">';
-            if ($product['originalPrice'] > $product['currentPrice']) {
-                $output .= '<span class="discount">&euro; ' . $product['originalPrice'] . '</span>';
-            }
-            $output .= '&euro; ' . $product['currentPrice'] . '</div></a>';
-            $output .= '<div class="card-content">';
-            $output .= '<a class="card-title" href="' . $link . '" target="_blank"><h4>' . $product['name'] . '</h4></a>';
-            $output .= '<p>' . ucfirst($product['type']) . ', ' . $product['category'] . '</p>';
-            $output .= '<a href="' . $link . '" class="button" target="_blank" style="background-color:' . $value['color'] . '">' . $value['button'] . '</a>';
-            $output .= '</div></div></div>';
-        }
-        $output .= '</ul>';
-    } else {
-        echo '<i>Oops, something is wrong</i>';
-        var_dump($data);
+                        <p><code>keys</code> Display products with given key. Default all products are available.</p>
+
+                        <?php
+                        $data = $this->getData('customers/products/list', 'holli_keys');
+                        $products = array_shift($data);
+
+                        echo $this->getOptionsList('keys', $products, true);
+                        ?>
+
+                        <p>
+                            <strong>Windows:</strong> Hhold down the CTRL button to select multiple options.<br>
+                            <strong>Mac:</strong> Hold down the command button to select multiple options.</p>
+
+                        <input type="hidden" name="page" value="holli"/>
+
+                        <br>
+
+                        <button class="button button-primary" id="holli-admin-save" type="submit">
+                            <?php _e('Update', 'holli'); ?>
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+            </form>
+        <?php endif; ?>
+
+        <?php
     }
-    return $output;
 
-    ob_get_clean();
-}
+    /**
+     * Make an API call to the Holli API and returns the (cached) response
+     *
+     * @param $resource
+     * @param $key
+     * @return array
+     */
+    private function getData($resource, $key): array
+    {
+        $options = $this->getOptions();
+
+        $data = [];
+
+        if(isset($options['api_key'])) {
+            $wp_request_headers = [
+                'x-authorization:' . $options['api_key'],
+                'x-authorization' => $options['api_key'],
+                'Content-Type' => 'application/json'
+            ];
+
+            $url = HOLLI_DOMAIN . '/api/' . HOLLI_VERSION . '/' . $resource;
+
+            $cached = get_transient($key);
+
+            if (false !== $cached) {
+                $response = $cached;
+            } else {
+                $response = wp_remote_get($url, [
+                    'headers' => $wp_request_headers
+                ]);
+
+                // Cache the response
+                set_transient($key, $response, 24 * HOUR_IN_SECONDS);
+            }
+
+            if (is_array($response) && !is_wp_error($response)) {
+                $data = json_decode($response['body'], true);
+            }
+
+            return $data;
+        }
+
+        return [];
+    }
+
+    /**
+     * Get a Dashicon for a given status
+     *
+     * @param $valid boolean
+     *
+     * @return string
+     */
+    private function getStatusIcon(bool $valid): string
+    {
+        return ($valid) ? '<span class="dashicons dashicons-yes-alt success-message" style="color:#58D68D;font-size:24px;margin-top:3px"></span>'
+            : '<span class="dashicons dashicons-dismiss error-message" style="font-size:24px;margin-top:3px"></span>';
+    }
+
+    /**
+     * Gets the request parameter.
+     *
+     * @param string $key The query parameter
+     * @param string $default The default value to return if not found
+     *
+     * @return     string  The request parameter.
+     */
+    function get_request_parameter(string $key, string $default = ''): string
+    {
+        if (empty($_REQUEST[$key])) {
+            return $default;
+        }
+
+        // Set so process it
+        if (!is_array($_REQUEST[$key])) {
+            return strip_tags((string)wp_unslash($_REQUEST[$key]));
+        }
+
+        return implode(',', $_REQUEST[$key]);
+
+    }
+
+    /**
+     * Generate an options list
+     *
+     * @param string $name
+     * @param $options array
+     * @param bool $multiple
+     * @return string
+     */
+    private function getOptionsList(string $name, array $options, bool $multiple = false): string
+    {
+        $data = $this->getOptions();
+        $selected = array_key_exists('shortcode_' . $name, $data) ? $data['shortcode_' . $name] : [];
+
+        $output = '<label for="' . $name . '"></label><select name="holli_shortcode_' . $name . '[]" ';
+        if($multiple){
+            $output .= ' multiple size="8"';
+        }
+
+        $output .= '><option></option>';
+
+        foreach ($options as $option) {
+            $output .= '<option value="' . $option['id'] . '"';
+            if (in_array($option['id'], $selected)) {
+                $output .= 'selected';
+            }
+            $output .= '>' . $option['name'] . '</option>';
+        }
+
+        $output .= '</select>';
+
+        return $output;
+    }
+
+    /**
+     * Add the web app code to the page
+     *
+     * This contains the shortcode markup used by the web app and the widget API call on the frontend
+     *
+     * @param array $atts
+     * @return string
+     */
+    public function addProductListCode(array $atts = []): string
+    {
+        ob_start();
+
+        $options = $this->getOptions();
+
+        $value = shortcode_atts([
+            'id' => '',
+            'limit' => 4,
+            'color' => '',
+            'button' => 'Buy Now',
+            'recommended' => 0,
+            'lang' => 'en',
+            'area' => '',
+            'partner_id' => null,
+            'cat' => '',
+            'keys' => '',
+        ], $atts);
+
+        $url_params = '&limit=' . $value['limit'];
+        $url_params .= '&zone_id=' . $value['area'];
+        $url_params .= '&recommended=' . $value['recommended'];
+        $url_params .= '&category_id=' . $value['cat'];
+        $url_params .= '&ids=' . $value['keys'];
+
+        $data = $this->getData('products?' . $url_params, 'holli_api_tickets' . $value['id'] . $value['limit'] . $value['area'] . $value['recommended'] . $value['lang'] . $value['cat'] . $value['keys']);
+
+        $output = '<div class="card-container">';
+
+        if (!$options['api_key']) {
+            echo '<i>Please set your API key in the plugin settings</i>';
+        } elseif (!$data) {
+            echo '<i>No data found</i>';
+        } elseif ($data['data']) {
+            foreach ($data['data'] as $product) {
+                $link = HOLLI_LINK . ($value['lang'] === "en" ? '/' : '/' . $value['lang'] . '/') . HOLLI_PAGE . '/' . $product['slug'] . '-' . $product['id'] . '?partnerId=' . $options['api_guid'];
+                $output .= '<div class="card">';
+                $output .= '<div class="card-inner">';
+                $output .= '<a class="card-image" href="' . $link . '" target="_blank">';
+                $output .= '<img src="' . $product['media'][0]['imageUrl'] . '" style="height:140px" alt="' . $product['name'] . '"/>';
+                $output .= '<div class="card-price" style="background-color:' . $value['color'] . '">';
+                if ($product['originalPrice'] > $product['currentPrice']) {
+                    $output .= '<span class="discount">&euro; ' . $product['originalPrice'] . '</span>';
+                }
+                $output .= '&euro; ' . $product['currentPrice'] . '</div></a>';
+                $output .= '<div class="card-content">';
+                $output .= '<a class="card-title" href="' . $link . '" target="_blank"><h4>' . $product['name'] . '</h4></a>';
+                $output .= '<p>' . ucfirst($product['type']) . ', ' . $product['name'] . '</p>';
+                $output .= '<a href="' . $link . '" class="button" target="_blank" style="background-color:' . $value['color'] . '">' . $value['button'] . '</a>';
+                $output .= '</div></div></div>';
+            }
+            $output .= '</ul>';
+        } else {
+            echo '<i>Oops, something is wrong</i>';
+        }
+
+        ob_get_clean();
+
+        return $output;
+    }
 }
 
 /*
