@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Holli
  * Description:       Plugin for the Holli API
- * Version:           1.5.1
+ * Version:           1.6.2
  * Author:            Talpaq
  * Author URI:        https://talpaq.com
  * Text Domain:       talpaq
@@ -12,6 +12,32 @@
  */
 
 defined('ABSPATH') || exit;
+
+/*
+* Holli constants
+*/
+if (!defined('HOLLI_PLUGIN_VERSION')) {
+    define('HOLLI_PLUGIN_VERSION', '1.6.2');
+}
+if (!defined('HOLLI_URL')) {
+    define('HOLLI_URL', plugin_dir_url(__FILE__));
+}
+if (!defined('HOLLI_PATH')) {
+    define('HOLLI_PATH', plugin_dir_path(__FILE__));
+}
+if (!defined('HOLLI_DOMAIN')) {
+    define('HOLLI_DOMAIN', 'https://backend.holliapp.com');
+}
+if (!defined('HOLLI_LINK')) {
+    define('HOLLI_LINK', 'https://tickets-tours.com');
+}
+if (!defined('HOLLI_PAGE')) {
+    define('HOLLI_PAGE', 'activity');
+}
+if (!defined('HOLLI_VERSION')) {
+    define('HOLLI_VERSION', 'v4');
+}
+
 
 if (!class_exists('updateChecker')) {
 
@@ -23,11 +49,14 @@ if (!class_exists('updateChecker')) {
         public string $cache_key;
         public bool $cache_allowed;
 
+
+
         public function __construct()
         {
+
             $this->plugin_slug = plugin_basename(__DIR__);
-            $this->version = '1.0';
-            $this->cache_key = 'holli_custom_upd';
+            $this->version = HOLLI_PLUGIN_VERSION;
+            $this->cache_key = 'holli_updater';
             $this->cache_allowed = false;
 
             add_filter('plugins_api', array($this, 'info'), 20, 3);
@@ -164,30 +193,6 @@ if (!class_exists('updateChecker')) {
 /** Allow for cross-domain requests (from the front end). */
 send_origin_headers();
 
-/*
-* Holli constants
-*/
-if (!defined('HOLLI_PLUGIN_VERSION')) {
-    define('HOLLI_PLUGIN_VERSION', '1.3.3');
-}
-if (!defined('HOLLI_URL')) {
-    define('HOLLI_URL', plugin_dir_url(__FILE__));
-}
-if (!defined('HOLLI_PATH')) {
-    define('HOLLI_PATH', plugin_dir_path(__FILE__));
-}
-if (!defined('HOLLI_DOMAIN')) {
-    define('HOLLI_DOMAIN', 'https://backend.holliapp.com');
-}
-if (!defined('HOLLI_LINK')) {
-    define('HOLLI_LINK', 'https://tickets-tours.com');
-}
-if (!defined('HOLLI_PAGE')) {
-    define('HOLLI_PAGE', 'activity');
-}
-if (!defined('HOLLI_VERSION')) {
-    define('HOLLI_VERSION', 'v4');
-}
 
 /*
  * Holli stylesheet
