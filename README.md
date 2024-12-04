@@ -47,7 +47,7 @@ For bugs and problems please create a Github issue.
 1.5.1 - Add update checker  
 1.5.0 - Changed product url to new format  
 1.4.0 - Changed domain name to tickets-tours.com  
-1.3.6 - Add cat attribute to filter by category 
+1.3.6 - Add cat attribute to filter by category  
 1.3.5 - Set image height  
 1.3.4 - Clear cache when changing shortcode parameters  
 1.3.3 - Add id attribute so shortcode can be used multiple times. Clear cache on plugin reactivate.  
