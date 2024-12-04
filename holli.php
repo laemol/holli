@@ -543,7 +543,8 @@ class Holli
                 $response = $cached;
             } else {
                 $response = wp_remote_get($url, [
-                    'headers' => $wp_request_headers
+                    'headers' => $wp_request_headers,
+                    'timeout' => 20
                 ]);
 
                 // Cache the response
@@ -653,7 +654,7 @@ class Holli
             'area' => '',
             'partner_id' => null,
             'cat' => '',
-            'keys' => '',
+            'keys' => ''
         ], $atts);
 
         $url_params = '&limit=' . $value['limit'];
@@ -662,7 +663,7 @@ class Holli
         $url_params .= '&category_id=' . $value['cat'];
         $url_params .= '&ids=' . $value['keys'];
 
-        $data = $this->getData('products?' . $url_params, 'holli_api_tickets' . $value['id'] . $value['limit'] . $value['area'] . $value['recommended'] . $value['lang'] . $value['cat'] . $value['keys']);
+        $data = $this->getData('products?' . $url_params, base64_encode('holli_api_' . $url_params));
 
         $output = '<div class="card-container">';
 

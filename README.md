@@ -41,9 +41,10 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
-1.6.1 - Fix updater
-1.6.0 - Extra parameter to add specific products with example shortcode
-1.5.1 - Add update checker 
+1.6.2 - Increased timeout to fix limit issues  
+1.6.1 - Fix updater  
+1.6.0 - Extra parameter to add specific products with example shortcode  
+1.5.1 - Add update checker  
 1.5.0 - Changed product url to new format 
 1.4.0 - Changed domain name to tickets-tours.com  
 1.3.6 - Add cat attribute to filter by category  
