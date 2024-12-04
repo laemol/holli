@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Holli
  * Description:       Plugin for the Holli API
- * Version:           1.6.2
+ * Version:           1.6.3
  * Author:            Talpaq
  * Author URI:        https://talpaq.com
  * Text Domain:       talpaq

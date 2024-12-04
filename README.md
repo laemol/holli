@@ -41,7 +41,7 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
-1.6.2 - Increased timeout to fix limit issues  
+1.6.2 - Increased timeout to fix limit bug  
 1.6.1 - Fix updater  
 1.6.0 - Extra parameter to add specific products with example shortcode  
 1.5.1 - Add update checker  
