@@ -17,7 +17,7 @@ defined('ABSPATH') || exit;
 * Holli constants
 */
 if (!defined('HOLLI_PLUGIN_VERSION')) {
-    define('HOLLI_PLUGIN_VERSION', '1.6.2');
+    define('HOLLI_PLUGIN_VERSION', '1.6.3');
 }
 if (!defined('HOLLI_URL')) {
     define('HOLLI_URL', plugin_dir_url(__FILE__));
