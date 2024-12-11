@@ -35,6 +35,15 @@ Results from the API are cached for a day. To clear the cache deactivate and act
 
 `lang` Sets the language. Default value is EN.
 
+## Debugging
+
+If the shortcode gives no results you can enable debugging options in wp-config.  
+  
+`define( 'WP_DEBUG', true );`  
+`define( 'WP_DEBUG_LOG', true );`  
+  
+This will output deata to the `wp-content/debug.log`  
+  
 ## Support
 
 For bugs and problems please create a Github issue.
