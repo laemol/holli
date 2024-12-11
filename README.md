@@ -42,7 +42,7 @@ If the shortcode gives no results you can enable debugging options in wp-config.
 `define( 'WP_DEBUG', true );`  
 `define( 'WP_DEBUG_LOG', true );`  
   
-This will output deata to the `wp-content/debug.log`  
+This will generate output in the `wp-content/debug.log` file.  
   
 ## Support
 
