@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Holli
  * Description:       Plugin for the Holli API
- * Version:           1.6.3
+ * Version:           1.6.4
  * Author:            Talpaq
  * Author URI:        https://talpaq.com
  * Text Domain:       talpaq
@@ -17,7 +17,7 @@ defined('ABSPATH') || exit;
 * Holli constants
 */
 if (!defined('HOLLI_PLUGIN_VERSION')) {
-    define('HOLLI_PLUGIN_VERSION', '1.6.3');
+    define('HOLLI_PLUGIN_VERSION', '1.6.4');
 }
 if (!defined('HOLLI_URL')) {
     define('HOLLI_URL', plugin_dir_url(__FILE__));
@@ -539,7 +539,7 @@ class Holli
 
             $cached = get_transient($key);
 
-            if (false !== $cached) {
+            if (false !== $cached && (defined('WP_DEBUG') && !WP_DEBUG)) {
                 $response = $cached;
             } else {
                 $response = wp_remote_get($url, [
@@ -554,11 +554,9 @@ class Holli
             if (is_array($response) && !is_wp_error($response)) {
                 $data = json_decode($response['body'], true);
             }
-
-            return $data;
         }
 
-        return [];
+        return $data;
     }
 
     /**
@@ -664,6 +662,22 @@ class Holli
         $url_params .= '&ids=' . $value['keys'];
 
         $data = $this->getData('products?' . $url_params, base64_encode('holli_api_' . $url_params));
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+
+            global $wp_version;
+            $wordpress_version = $wp_version;
+            $php_version = phpversion();
+            $dump_options = print_r($value, true);
+            $dump_data = is_array($data) ? print_r($data, true) : $data;
+        
+            // Log to debug-log
+            error_log("-------- Holli API Dump --------");
+            error_log("WordPress version: $wordpress_version");
+            error_log("PHP version: ". phpversion());
+            error_log("Params: " . $dump_options);
+            error_log("Data: " . $dump_data);
+        }
 
         $output = '<div class="card-container">';
 
