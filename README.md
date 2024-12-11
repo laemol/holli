@@ -41,7 +41,7 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
-1.6.4 - Add debugging option
+1.6.4 - Add debugging option  
 1.6.3 - Bump update version  
 1.6.2 - Increased timeout to fix limit bug  
 1.6.1 - Fix updater  
