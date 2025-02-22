@@ -77,3 +77,8 @@ a.button:hover {
 .clear {
   clear: both;
 }
+
+i {
+  color: #ccc;
+  font-family:Arial, Helvetica, sans-serif
+}
