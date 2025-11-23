@@ -50,6 +50,7 @@ For bugs and problems please create a Github issue.
 
 ## Changelog
 
+1.6.6 - Update style
 1.6.5 - Display error info for shortcode  
 1.6.4 - Add debugging option  
 1.6.3 - Bump update version  
