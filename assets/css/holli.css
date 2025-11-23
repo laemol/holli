@@ -1,35 +1,45 @@
-.card-container {
+.holli-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  grid-gap: 15px;
-  width: 100%
+  grid-gap: 20px;
+  width: 100%;
+  font-family: "Inter var", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, sans-serif;
 }
 
-.card {
+.holli-container .card {
   border: 1px solid #ccc;
   border-radius: 5px;
   width: 250px;
   overflow: hidden;
   position: relative;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
 }
 
-.card img {
+.holli-container .card-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.holli-container .card img {
   width: 100%;
   height:140px;
 }
 
-.card-price {
+.holli-container .card-price {
   position: absolute;
   top: 100px;
   left: 0;
-  background: #FF4A52;
+  background: #E64694;
   padding: 3px 10px 2px 10px;
   color: #fff;
   font-weight: 700;
   font-size: 15px;
 }
 
-.discount {
+.holli-container .discount {
   font-weight: 400;
   margin-right: 5px;
   text-decoration: line-through;
@@ -37,48 +47,40 @@
   font-size: 13px;
 }
 
-.card-content {
+.holli-container .card-content {
   padding:10px;
-  margin-bottom: 10px;
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
 }
 
-.card-content p{
-  color: #ccc;
+.holli-container .card-content p{
+  color: #090909;
+  font-size: 16px;
+  font-weight: 500;
+  margin-top:5px;
 }
 
-.card-title {
-  display: block;
-  height: 50px;
-  box-shadow: none !important;
-  -webkit-box-shadow: none !important;
-  overflow: hidden;
+.holli-container .badge {
+  background-color: #009FE3;
+  font-size: 12px;
+  color:#fff;
+  padding: 3px;
+  border-radius: 3px;
+  width: 25%;
+  text-align: center;
+  margin-bottom: 5px;
 }
 
-a.button {
+.holli-container a.button {
   cursor: pointer;
   text-align: center;
   text-decoration: none;
   padding: .4em 1.1em .4em 1.1em;
   color: #fff;
-  background: #FF4A52;
+  background: #E64694;
   font-size: 15px;
   border-radius: 5px;
   text-decoration: none;
-  box-shadow: none !important;
-  -webkit-box-shadow: none !important;
-  margin-bottom: 10px;
-}
-
-a.button:hover {
-  box-shadow: none;
-  -webkit-box-shadow: none;
-}
-
-.clear {
-  clear: both;
-}
-
-i {
-  color: #ccc;
-  font-family:Arial, Helvetica, sans-serif
+  margin-top: auto;  
 }

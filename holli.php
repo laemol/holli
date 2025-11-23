@@ -679,7 +679,7 @@ class Holli
             error_log("Data: " . $dump_data);
         }
 
-        $output = '<div class="card-container">';
+        $output = '<div class="holli-container">';
 
         if (!$options['api_key']) {
             echo '<i>Please set your API key in the plugin settings</i>';
@@ -698,8 +698,8 @@ class Holli
                 }
                 $output .= '&euro; ' . $product['currentPrice'] . '</div></a>';
                 $output .= '<div class="card-content">';
-                $output .= '<a class="card-title" href="' . $link . '" target="_blank"><h4>' . $product['name'] . '</h4></a>';
-                $output .= '<p>' . ucfirst($product['type']) . ', ' . $product['name'] . '</p>';
+                $output .= '<div class="badge">' . ucfirst($product['type']) . '</div>';
+                $output .= '<p>' . $product['name'] . '</p>';
                 $output .= '<a href="' . $link . '" class="button" target="_blank" style="background-color:' . $value['color'] . '">' . $value['button'] . '</a>';
                 $output .= '</div></div></div>';
             }
